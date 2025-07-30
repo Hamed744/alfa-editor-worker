@@ -9,7 +9,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- پیکربندی اسپیس‌های کارگر ---
-// آدرس‌های اسپیس‌های شما در اینجا قرار گرفته است
 const HF_WORKERS = [
     'ezmary-alfa-editor-worker-1.hf.space',
     'ezmary-alfa-editor-worker-2.hf.space',
@@ -41,12 +40,16 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
     }
 
     const workerHost = getNextWorker();
-    const apiUrl = `https://${workerHost}/api/edit`;
+    
+    // ==========================================================
+    //  تغییر کلیدی و تنها تغییر لازم اینجاست
+    // ==========================================================
+    const apiUrl = `https://${workerHost}/edit-image`; // آدرس به /edit-image تغییر کرد
+    // ==========================================================
 
     console.log(`[API Proxy] Forwarding request to: ${apiUrl}`);
 
     try {
-        // برای ارسال فایل به عنوان form-data، از پکیج form-data استفاده می‌کنیم
         const FormData = require('form-data');
         const formData = new FormData();
         formData.append('image', req.file.buffer, {
@@ -65,24 +68,21 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
         if (!hfResponse.ok) {
             let errorText = `Worker API error (${hfResponse.status})`;
             try {
-                // تلاش برای خواندن جزئیات خطا از FastAPI
                 const errorJson = await hfResponse.json();
                 errorText = errorJson.detail || JSON.stringify(errorJson);
             } catch (e) {
-                // اگر پاسخ JSON نبود
                 errorText = await hfResponse.text();
             }
             throw new Error(errorText);
         }
         
-        // پاسخ موفقیت‌آمیز یک تصویر است
         res.setHeader('Content-Type', hfResponse.headers.get('content-type') || 'image/png');
         
         const pipe = promisify(pipeline);
         await pipe(hfResponse.body, res);
 
     } catch (error) {
-        console.error('[Proxy Error]', error);
+        console.error('[Proxy Error]', error.message);
         res.status(502).json({ error: `An unexpected error occurred: ${error.message}` });
     }
 });

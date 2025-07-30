@@ -1,0 +1,17 @@
+{
+  "name": "alpha-image-proxy-server",
+  "version": "1.0.0",
+  "description": "Load balancer, API, and UI for the Alfa Image Editor.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

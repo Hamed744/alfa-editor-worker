@@ -1,21 +1,20 @@
+// server.js
+
 const express = require('express');
 const multer = require('multer');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // اطمینان حاصل کنید نسخه 2.x نصب است
 const path = require('path');
-const { pipeline } = require('stream');
-const { promisify } = require('util');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- پیکربندی اسپیس‌های کارگر ---
+// لیست اسپیس‌های کارگر شما
 const HF_WORKERS = [
     'ezmary-alfa-editor-worker-1.hf.space',
     'ezmary-alfa-editor-worker-2.hf.space',
     'ezmary-alfa-editor-worker-3.hf.space'
 ];
 
-// --- سیستم توزیع بار چرخشی (Round Robin) ---
 let nextWorkerIndex = 0;
 const getNextWorker = () => {
     const workerHost = HF_WORKERS[nextWorkerIndex];
@@ -24,70 +23,80 @@ const getNextWorker = () => {
     return workerHost;
 };
 
-// --- Middleware ---
 app.use(express.static(path.join(__dirname, 'public')));
 
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // محدودیت ۱۰ مگابایت برای فایل
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// --- نقطه پایانی اصلی API ---
 app.post('/api/edit', upload.single('image'), async (req, res) => {
     if (!req.file || !req.body.prompt) {
         return res.status(400).json({ error: 'Image file and prompt text are required.' });
     }
 
     const workerHost = getNextWorker();
-    
-    // ==========================================================
-    //  تغییر کلیدی و تنها تغییر لازم اینجاست
-    // ==========================================================
-    const apiUrl = `https://${workerHost}/edit-image`; // آدرس به /edit-image تغییر کرد
-    // ==========================================================
+    const apiUrl = `https://${workerHost}/run/predict`; // آدرس API داخلی Gradio
 
-    console.log(`[API Proxy] Forwarding request to: ${apiUrl}`);
+    console.log(`[API Proxy] Forwarding request to Gradio worker: ${apiUrl}`);
 
     try {
-        const FormData = require('form-data');
-        const formData = new FormData();
-        formData.append('image', req.file.buffer, {
-            filename: req.file.originalname,
-            contentType: req.file.mimetype,
-        });
-        formData.append('prompt', req.body.prompt);
+        // 1. تبدیل تصویر به فرمت Data URI که Gradio می‌فهمد
+        const imageBase64 = req.file.buffer.toString('base64');
+        const imageDataURI = `data:${req.file.mimetype};base64,${imageBase64}`;
+        
+        // 2. ساختن payload برای API Gradio
+        const payload = {
+            "data": [
+                imageDataURI,       // ورودی اول: image_input
+                req.body.prompt,    // ورودی دوم: prompt_input
+            ]
+        };
 
         const hfResponse = await fetch(apiUrl, {
             method: 'POST',
-            body: formData,
-            headers: formData.getHeaders(),
-            timeout: 180000 // تایم‌اوت ۱۸۰ ثانیه‌ای (۳ دقیقه)
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 180000 // تایم‌اوت ۳ دقیقه‌ای
         });
 
         if (!hfResponse.ok) {
-            let errorText = `Worker API error (${hfResponse.status})`;
-            try {
-                const errorJson = await hfResponse.json();
-                errorText = errorJson.detail || JSON.stringify(errorJson);
-            } catch (e) {
-                errorText = await hfResponse.text();
-            }
-            throw new Error(errorText);
+            const errorText = await hfResponse.text();
+            throw new Error(`Worker API error (${hfResponse.status}): ${errorText}`);
         }
         
-        res.setHeader('Content-Type', hfResponse.headers.get('content-type') || 'image/png');
+        const responseJson = await hfResponse.json();
+
+        // 3. بررسی خطا در پاسخ Gradio
+        if (responseJson.error) {
+            throw new Error(`Gradio worker returned an error: ${responseJson.error}`);
+        }
         
-        const pipe = promisify(pipeline);
-        await pipe(hfResponse.body, res);
+        // 4. استخراج تصویر از پاسخ Gradio
+        // ساختار پاسخ: data[0] -> output_gallery, data[0][0] -> first image in gallery
+        // data[0][0][0] -> base64 data uri of the first image
+        const resultImageDataURI = responseJson.data[0][0][0];
+        
+        if (!resultImageDataURI) {
+            // اگر تصویری برنگشت، متن خطا را نمایش بده
+            const errorTextFromGradio = responseJson.data[1] || "No image was generated.";
+            throw new Error(errorTextFromGradio);
+        }
+
+        // 5. تبدیل Data URI به بافر (Buffer) و ارسال به کاربر
+        const base64Data = resultImageDataURI.split(';base64,').pop();
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(imageBuffer);
 
     } catch (error) {
-        console.error('[Proxy Error]', error.message);
+        console.error('[Proxy Error]', error);
         res.status(502).json({ error: `An unexpected error occurred: ${error.message}` });
     }
 });
 
-// تمام درخواست‌های GET به صفحه اصلی هدایت می‌شوند
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

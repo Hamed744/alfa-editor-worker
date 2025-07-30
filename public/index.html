@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایشگر تصویر آلفا</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --border-color: #dee2e6;
+            --radius: 12px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="file"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        #image-preview-container {
+            margin-top: 1rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            text-align: center;
+            color: #6c757d;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: 'Vazirmatn', sans-serif;
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        button[type="submit"]:disabled {
+            background-color: #adb5bd;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #result-container, #error-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #result-container {
+            background-color: #e9f7ef;
+            border: 1px solid #a3e9a4;
+        }
+
+        #error-container {
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+            color: #721c24;
+        }
+
+        #result-image-wrapper {
+            margin-bottom: 1.5rem;
+        }
+
+        #result-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #download-link {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        #download-link:hover {
+            background-color: var(--primary-hover);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>ویرایش جادویی تصاویر با هوش مصنوعی آلفا ✨</h1>
+            <p>تصویر خود را آپلود کنید، دستور ویرایش را بنویسید و نتیجه را تحویل بگیرید.</p>
+        </header>
+
+        <main>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="image-input">۱. تصویر خود را انتخاب کنید:</label>
+                    <input type="file" id="image-input" name="image" accept="image/png, image/jpeg" required>
+                    <div id="image-preview-container">
+                        <img id="image-preview" src="#" alt="پیش‌نمایش تصویر" style="display:none;"/>
+                        <span id="preview-text">پیش‌نمایش تصویر در اینجا نمایش داده می‌شود</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prompt-input">۲. دستور ویرایش را بنویسید:</label>
+                    <textarea id="prompt-input" name="prompt" rows="3" placeholder="مثال: روی صورت استایل جوکر اضافه کن" required></textarea>
+                </div>
+
+                <button type="submit" id="submit-btn">
+                    <span class="btn-text">اعمال تغییرات</span>
+                    <div class="spinner" style="display: none;"></div>
+                </button>
+            </form>
+
+            <div id="result-container" style="display:none;">
+                <h2>نتیجه ویرایش:</h2>
+                <div id="result-image-wrapper">
+                    <img id="result-image" src="" alt="تصویر ویرایش شده">
+                </div>
+                <a id="download-link" href="#" download="edited-image.png">دانلود تصویر</a>
+            </div>
+
+            <div id="error-container" style="display:none;">
+                <h3>خطا!</h3>
+                <p id="error-message"></p>
+            </div>
+        </main>
+        
+        <footer>
+            <p>قدرت گرفته از هوش مصنوعی آلفا</p>
+        </footer>
+    </div>
+
+    <script>
+        const form = document.getElementById('edit-form');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const previewText = document.getElementById('preview-text');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.spinner');
+        const resultContainer = document.getElementById('result-container');
+        const resultImage = document.getElementById('result-image');
+        const downloadLink = document.getElementById('download-link');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+
+        // Show image preview
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                previewText.style.display = 'none';
+                imagePreview.style.display = 'block';
+                imagePreview.src = URL.createObjectURL(file);
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // UI feedback for loading state
+            submitBtn.disabled = true;
+            btnText.textContent = 'در حال پردازش...';
+            spinner.style.display = 'inline-block';
+            resultContainer.style.display = 'none';
+            errorContainer.style.display = 'none';
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/edit', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        // FastAPI errors are often JSON
+                        errorData = await response.json();
+                    } catch (jsonError) {
+                        // Fallback for non-JSON errors
+                        throw new Error(`خطای سرور (${response.status}): ${response.statusText}`);
+                    }
+                    // Use the detailed error message from the server
+                    throw new Error(errorData.error || errorData.detail || 'یک خطای ناشناخته در سرور رخ داد.');
+                }
+                
+                // Response is a direct image blob
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+
+                // Display result
+                resultImage.src = imageUrl;
+                downloadLink.href = imageUrl;
+                resultContainer.style.display = 'block';
+
+            } catch (error) {
+                // Display error message
+                errorMessage.textContent = error.message;
+                errorContainer.style.display = 'block';
+            } finally {
+                // Reset UI
+                submitBtn.disabled = false;
+                btnText.textContent = 'اعمال تغییرات';
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

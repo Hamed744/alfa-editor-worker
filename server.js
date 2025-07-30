@@ -1,4 +1,4 @@
-// server.js
+// server.js (نسخه نهایی و تضمینی)
 
 const express = require('express');
 const multer = require('multer');
@@ -8,7 +8,6 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// لیست اسپیس‌های کارگر شما
 const HF_WORKERS = [
     'ezmary-alfa-editor-worker-1.hf.space',
     'ezmary-alfa-editor-worker-2.hf.space',
@@ -38,8 +37,11 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
 
     const workerHost = getNextWorker();
     
-    // آدرس صحیح برای Gradio بدون صف
-    const apiUrl = `https://${workerHost}/api/predict/`; // یک اسلش در انتها اضافه شد برای اطمینان
+    // ==========================================================
+    //  آدرس صحیح و نهایی با توجه به api_name="edit"
+    // ==========================================================
+    const apiUrl = `https://${workerHost}/run/edit`; 
+    // ==========================================================
 
     console.log(`[API Proxy] Forwarding request to Gradio worker: ${apiUrl}`);
 
@@ -47,10 +49,11 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
         const imageBase64 = req.file.buffer.toString('base64');
         const imageDataURI = `data:${req.file.mimetype};base64,${imageBase64}`;
         
+        // payload برای Gradio با api_name
         const payload = {
             "data": [
-                imageDataURI,       // ورودی اول (image_input)
-                req.body.prompt,    // ورودی دوم (prompt_input)
+                imageDataURI,
+                req.body.prompt,
             ]
         };
 
@@ -65,7 +68,7 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
             let errorText = `Worker API error (${hfResponse.status})`;
             try {
                 const errorBody = await hfResponse.json();
-                errorText = errorBody.detail || JSON.stringify(errorBody);
+                errorText = errorBody.detail || errorBody.error || JSON.stringify(errorBody);
             } catch (e) {
                 errorText = await hfResponse.text();
             }
@@ -78,7 +81,7 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
             throw new Error(`Gradio worker returned an error: ${responseJson.error}`);
         }
         
-        // استخراج تصویر از پاسخ
+        // استخراج تصویر از پاسخ (ساختار خروجی Gallery)
         const resultImageDataURI = responseJson.data[0] && responseJson.data[0][0] && responseJson.data[0][0][0];
         
         if (!resultImageDataURI) {

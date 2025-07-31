@@ -28,7 +28,7 @@
             min-height: 100vh;
         }
         .container {
-            max-width: 900px; /* <<< تغییر: عرض کانتینر بیشتر شد */
+            max-width: 700px;
             width: 100%;
             background-color: var(--card-bg);
             border-radius: var(--radius);
@@ -41,11 +41,21 @@
         header p { font-size: 1.1rem; color: #6c757d; }
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; font-weight: 700; margin-bottom: 0.75rem; font-size: 1.1rem; }
-        input[type="file"], textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-family: 'Vazirmatn', sans-serif; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+        input[type="file"], textarea {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+        }
         input[type="file"]:focus, textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); }
-        #image-preview-container { margin-top: 1rem; border: 2px dashed var(--border-color); border-radius: 8px; padding: 1rem; display: flex; justify-content: center; align-items: center; min-height: 200px; text-align: center; color: #6c757d; position: relative; overflow: hidden; }
+        #image-preview-container {
+            margin-top: 1rem; border: 2px dashed var(--border-color); border-radius: 8px; padding: 1rem; display: flex; justify-content: center;
+            align-items: center; min-height: 200px; text-align: center; color: #6c757d; position: relative; overflow: hidden;
+        }
         #image-preview { max-width: 100%; max-height: 300px; border-radius: 4px; object-fit: contain; }
-        button[type="submit"] { width: 100%; padding: 1rem; font-size: 1.2rem; font-weight: 700; font-family: 'Vazirmatn', sans-serif; color: white; background-color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, opacity 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        button[type="submit"] {
+            width: 100%; padding: 1rem; font-size: 1.2rem; font-weight: 700; font-family: 'Vazirmatn', sans-serif; color: white;
+            background-color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, opacity 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
         button[type="submit"]:hover:not(:disabled) { background-color: var(--primary-hover); }
         button[type="submit"]:disabled { background-color: #adb5bd; cursor: not-allowed; opacity: 0.7; }
         .spinner { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -54,178 +64,133 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         #result-container { background-color: #e9f7ef; border: 1px solid #a3e9a4; }
         #error-container { background-color: #f8d7da; border: 1px solid #f5c2c7; color: #721c24; }
-        
-        /* <<< تغییر: استایل‌های جدید برای گرید تصاویر */
-        #result-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
+        #result-image-wrapper img { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        #result-image-wrapper a {
+            display: inline-block; padding: 0.75rem 1.5rem; background-color: var(--primary-color); color: white;
+            text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.2s; margin-bottom: 1.5rem;
         }
-        .result-item {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            padding: 1rem;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .result-item img {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .result-item a {
-            display: inline-block;
-            width: 100%;
-            text-align: center;
-            padding: 0.6rem 1rem;
-            background-color: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-        .result-item a:hover {
-            background-color: var(--primary-hover);
-        }
-        
+        #result-image-wrapper a:hover { background-color: var(--primary-hover); }
         footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: #6c757d; }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <header>
-            <h1>ویرایش جادویی تصاویر با هوش مصنوعی آلفا ✨</h1>
-            <p>تصویر خود را آپلود کنید، دستور ویرایش را بنویسید و نتایج را تحویل بگیرید.</p>
-        </header>
-
-        <main>
-            <form id="edit-form">
-                <div class="form-group">
-                    <label for="image-input">۱. تصویر خود را انتخاب کنید:</label>
-                    <input type="file" id="image-input" name="image" accept="image/png, image/jpeg" required>
-                    <div id="image-preview-container">
-                        <img id="image-preview" src="#" alt="پیش‌نمایش تصویر" style="display:none;"/>
-                        <span id="preview-text">پیش‌نمایش تصویر در اینجا نمایش داده می‌شود</span>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="prompt-input">۲. دستور ویرایش را بنویسید:</label>
-                    <textarea id="prompt-input" name="prompt" rows="3" placeholder="مثال: روی صورت استایل جوکر اضافه کن" required></textarea>
-                </div>
-
-                <button type="submit" id="submit-btn">
-                    <span class="btn-text">اعمال تغییرات</span>
-                    <div class="spinner" style="display: none;"></div>
-                </button>
-            </form>
-
-            <!-- <<< تغییر: ساختار بخش نتایج برای نمایش گرید تصاویر -->
-            <div id="result-container" style="display:none;">
-                <h2>نتایج ویرایش:</h2>
-                <div id="result-grid">
-                    <!-- تصاویر به صورت داینامیک اینجا اضافه می‌شوند -->
+<div class="container">
+    <header>
+        <h1>ویرایش جادویی تصاویر با هوش مصنوعی آلفا ✨</h1>
+        <p>تصویر خود را آپلود کنید، دستور ویرایش را بنویسید و نتیجه را تحویل بگیرید.</p>
+    </header>
+    <main>
+        <form id="edit-form">
+            <div class="form-group">
+                <label for="image-input">۱. تصویر خود را انتخاب کنید:</label>
+                <input type="file" id="image-input" name="image" accept="image/png, image/jpeg" required>
+                <div id="image-preview-container">
+                    <img id="image-preview" src="#" alt="پیش‌نمایش تصویر" style="display:none;"/>
+                    <span id="preview-text">پیش‌نمایش تصویر در اینجا نمایش داده می‌شود</span>
                 </div>
             </div>
-
-            <div id="error-container" style="display:none;">
-                <h3>خطا!</h3>
-                <p id="error-message"></p>
+            <div class="form-group">
+                <label for="prompt-input">۲. دستور ویرایش را بنویسید:</label>
+                <textarea id="prompt-input" name="prompt" rows="3" placeholder="مثال: روی صورت استایل جوکر اضافه کن" required></textarea>
             </div>
-        </main>
-        
-        <footer>
-            <p>قدرت گرفته از هوش مصنوعی آلفا</p>
-        </footer>
-    </div>
+            <button type="submit" id="submit-btn">
+                <span class="btn-text">اعمال تغییرات</span>
+                <div class="spinner" style="display: none;"></div>
+            </button>
+        </form>
+        <div id="result-container" style="display:none;">
+            <h2>نتایج ویرایش:</h2>
+            <div id="result-image-wrapper">
+                <!-- تصاویر به صورت داینامیک اینجا اضافه می‌شوند -->
+            </div>
+        </div>
+        <div id="error-container" style="display:none;">
+            <h3>خطا!</h3>
+            <p id="error-message"></p>
+        </div>
+    </main>
+    <footer>
+        <p>قدرت گرفته از هوش مصنوعی آلفا</p>
+    </footer>
+</div>
 
-    <script>
-        const form = document.getElementById('edit-form');
-        const imageInput = document.getElementById('image-input');
-        const imagePreview = document.getElementById('image-preview');
-        const previewText = document.getElementById('preview-text');
-        const submitBtn = document.getElementById('submit-btn');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const spinner = submitBtn.querySelector('.spinner');
-        const resultContainer = document.getElementById('result-container');
-        const resultGrid = document.getElementById('result-grid'); // <<< تغییر: گرید نتایج
-        const errorContainer = document.getElementById('error-container');
-        const errorMessage = document.getElementById('error-message');
+<script>
+    const form = document.getElementById('edit-form');
+    const imageInput = document.getElementById('image-input');
+    const imagePreview = document.getElementById('image-preview');
+    const previewText = document.getElementById('preview-text');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.spinner');
+    const resultContainer = document.getElementById('result-container');
+    const resultImageWrapper = document.getElementById('result-image-wrapper');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
 
-        imageInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                previewText.style.display = 'none';
-                imagePreview.style.display = 'block';
-                imagePreview.src = URL.createObjectURL(file);
+    imageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            previewText.style.display = 'none';
+            imagePreview.style.display = 'block';
+            imagePreview.src = URL.createObjectURL(file);
+        }
+    });
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        btnText.textContent = 'در حال پردازش...';
+        spinner.style.display = 'inline-block';
+        resultContainer.style.display = 'none';
+        errorContainer.style.display = 'none';
+        resultImageWrapper.innerHTML = ''; // پاک کردن نتایج قبلی
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/api/edit', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || `خطای سرور (${response.status})`);
             }
-        });
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            btnText.textContent = 'در حال پردازش...';
-            spinner.style.display = 'inline-block';
-            resultContainer.style.display = 'none';
-            resultGrid.innerHTML = ''; // <<< تغییر: پاک کردن نتایج قبلی
-            errorContainer.style.display = 'none';
-
-            const formData = new FormData(form);
-
-            try {
-                const response = await fetch('/api/edit', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const data = await response.json(); // <<< تغییر: پاسخ به عنوان JSON خوانده می‌شود
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'خطای ناشناخته در سرور');
-                }
-                
-                if (!data.images || data.images.length === 0) {
-                    throw new Error('هیچ تصویری از سرور دریافت نشد.');
-                }
-
-                // <<< تغییر: ایجاد گرید تصاویر از روی داده‌های Base64
+            
+            if (data.images && data.images.length > 0) {
                 data.images.forEach((base64Image, index) => {
-                    const imageUrl = `data:image/png;base64,${base64Image}`;
-                    
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'result-item';
+                    const imageUrl = 'data:image/png;base64,' + base64Image;
 
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.alt = `تصویر ویرایش شده ${index + 1}`;
+                    // ساخت تگ تصویر
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imageUrl;
+                    imgElement.alt = `تصویر ویرایش شده ${index + 1}`;
+                    resultImageWrapper.appendChild(imgElement);
 
+                    // ساخت لینک دانلود برای هر تصویر
                     const downloadLink = document.createElement('a');
                     downloadLink.href = imageUrl;
                     downloadLink.download = `edited-image-${index + 1}.png`;
-                    downloadLink.textContent = 'دانلود تصویر';
-
-                    resultItem.appendChild(img);
-                    resultItem.appendChild(downloadLink);
-                    resultGrid.appendChild(resultItem);
+                    downloadLink.textContent = `دانلود تصویر ${index + 1}`;
+                    resultImageWrapper.appendChild(downloadLink);
                 });
-
                 resultContainer.style.display = 'block';
-
-            } catch (error) {
-                errorMessage.textContent = error.message;
-                errorContainer.style.display = 'block';
-            } finally {
-                submitBtn.disabled = false;
-                btnText.textContent = 'اعمال تغییرات';
-                spinner.style.display = 'none';
+            } else {
+                 throw new Error('پاسخ معتبری از سرور دریافت نشد.');
             }
-        });
-    </script>
+
+        } catch (error) {
+            errorMessage.textContent = error.message;
+            errorContainer.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            btnText.textContent = 'اعمال تغییرات';
+            spinner.style.display = 'none';
+        }
+    });
+</script>
 </body>
 </html>

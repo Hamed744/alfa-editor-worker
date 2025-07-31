@@ -3,9 +3,16 @@ const multer = require('multer');
 const fetch = require('node-fetch');
 const path = require('path');
 const FormData = require('form-data');
+const cors = require('cors'); // <-- خط ۱: اضافه کردن پکیج
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// --- شروع تغییر ---
+// فعال‌سازی CORS برای تمام درخواست‌ها
+// این خط کد باید قبل از تعریف روت‌ها باشد
+app.use(cors()); // <-- خط ۲: استفاده از پکیج
+// --- پایان تغییر ---
 
 const HF_WORKERS = [
     'https://ezmary-alfa-editor-worker-1.hf.space',
@@ -61,7 +68,6 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
             throw new Error(errorMsg);
         }
 
-        // Forward the JSON response containing the images
         res.status(200).json(responseData);
 
     } catch (error) {

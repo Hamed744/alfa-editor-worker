@@ -24,7 +24,7 @@ const getNextWorker = () => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }
 });
@@ -36,7 +36,7 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
 
     const workerUrl = getNextWorker();
     const apiUrl = `${workerUrl}/edit`;
-    
+
     console.log(`[API Proxy] Forwarding to: ${apiUrl}`);
 
     try {
@@ -51,29 +51,22 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
             method: 'POST',
             body: formData,
             headers: formData.getHeaders(),
-            timeout: 180000
+            timeout: 180000 // 3 minutes timeout
         });
 
-        const contentType = hfResponse.headers.get('content-type');
-        
-        if (contentType && contentType.includes('image/png')) {
-            const imageBuffer = await hfResponse.buffer();
-            res.setHeader('Content-Type', 'image/png');
-            return res.send(imageBuffer);
-        }
-        
-        if (contentType && contentType.includes('application/json')) {
-            const errorBody = await hfResponse.json();
-            const errorMsg = errorBody.error || errorBody.detail || 'Unknown error from worker';
+        const responseData = await hfResponse.json();
+
+        if (!hfResponse.ok) {
+            const errorMsg = responseData.error || responseData.detail || 'Unknown error from worker';
             throw new Error(errorMsg);
         }
-        
-        const textResponse = await hfResponse.text();
-        throw new Error(textResponse || 'Unknown error from worker');
+
+        // Forward the JSON response containing the images
+        res.status(200).json(responseData);
 
     } catch (error) {
         console.error('[Proxy Error]', error.message);
-        res.status(502).json({ error: `Processing error: ${error.message}` });
+        res.status(502).json({ error: `Processing error from worker: ${error.message}` });
     }
 });
 

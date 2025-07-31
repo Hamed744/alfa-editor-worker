@@ -272,7 +272,7 @@
         const errorContainer = document.getElementById('error-container');
         const errorMessage = document.getElementById('error-message');
 
-        // Show image preview
+        // نمایش پیش‌نمایش تصویر
         imageInput.addEventListener('change', function() {
             const file = this.files[0];
             if (file) {
@@ -282,11 +282,11 @@
             }
         });
 
-        // Handle form submission
+        // مدیریت ارسال فرم
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // UI feedback for loading state
+            // حالت لودینگ
             submitBtn.disabled = true;
             btnText.textContent = 'در حال پردازش...';
             spinner.style.display = 'inline-block';
@@ -304,31 +304,28 @@
                 if (!response.ok) {
                     let errorData;
                     try {
-                        // FastAPI errors are often JSON
                         errorData = await response.json();
                     } catch (jsonError) {
-                        // Fallback for non-JSON errors
                         throw new Error(`خطای سرور (${response.status}): ${response.statusText}`);
                     }
-                    // Use the detailed error message from the server
-                    throw new Error(errorData.error || errorData.detail || 'یک خطای ناشناخته در سرور رخ داد.');
+                    throw new Error(errorData.error || 'خطای ناشناخته در سرور');
                 }
                 
-                // Response is a direct image blob
+                // دریافت تصویر به عنوان Blob
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
 
-                // Display result
+                // نمایش نتیجه
                 resultImage.src = imageUrl;
                 downloadLink.href = imageUrl;
                 resultContainer.style.display = 'block';
 
             } catch (error) {
-                // Display error message
+                // نمایش پیام خطا
                 errorMessage.textContent = error.message;
                 errorContainer.style.display = 'block';
             } finally {
-                // Reset UI
+                // بازنشانی UI
                 submitBtn.disabled = false;
                 btnText.textContent = 'اعمال تغییرات';
                 spinner.style.display = 'none';

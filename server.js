@@ -1,9 +1,10 @@
-// server.js (نسخه نهایی و تضمینی)
+// server.js (نسخه اصلاح شده و تضمینی)
 
 const express = require('express');
 const multer = require('multer');
 const fetch = require('node-fetch');
 const path = require('path');
+const FormData = require('form-data'); // اضافه شد
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,83 +38,46 @@ app.post('/api/edit', upload.single('image'), async (req, res) => {
     }
 
     const workerUrl = getNextWorker();
-    const apiUrl = `${workerUrl}/run/edit`;
+    const apiUrl = `${workerUrl}/edit`; // اصلاح شد: از /edit به جای /run/edit
     
-    console.log(`[API Proxy] ارسال درخواست به کارگر گرادیو: ${apiUrl}`);
+    console.log(`[API Proxy] ارسال درخواست به کارگر: ${apiUrl}`);
 
     try {
-        // تبدیل بافر تصویر به Data URI
-        const imageBase64 = req.file.buffer.toString('base64');
-        const imageDataURI = `data:${req.file.mimetype};base64,${imageBase64}`;
-        
-        // ساخت پیلود برای گرادیو
-        const payload = {
-            "data": [
-                imageDataURI, // تصویر به صورت Data URI
-                req.body.prompt // دستور ویرایش
-            ]
-        };
+        // ایجاد FormData برای ارسال به FastAPI
+        const formData = new FormData();
+        formData.append('image', req.file.buffer, {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype
+        });
+        formData.append('prompt', req.body.prompt);
 
         const hfResponse = await fetch(apiUrl, {
             method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            body: formData,
+            headers: formData.getHeaders(), // استفاده از هدرهای خودکار FormData
             timeout: 180000 // 3 دقیقه تایم‌اوت
         });
 
-        if (!hfResponse.ok) {
-            let errorText = `خطای کارگر گرادیو (${hfResponse.status})`;
-            try {
-                const errorBody = await hfResponse.json();
-                errorText = errorBody.detail || errorBody.error || JSON.stringify(errorBody);
-            } catch (e) {
-                errorText = await hfResponse.text();
-            }
-            throw new Error(errorText);
+        // بررسی نوع محتوای پاسخ
+        const contentType = hfResponse.headers.get('content-type');
+        
+        // حالت 1: پاسخ تصویری (موفقیت)
+        if (contentType && contentType.includes('image/png')) {
+            const imageBuffer = await hfResponse.buffer();
+            res.setHeader('Content-Type', 'image/png');
+            return res.send(imageBuffer);
         }
         
-        const responseJson = await hfResponse.json();
-        
-        // بررسی ساختار پاسخ و استخراج تصویر
-        if (responseJson.error) {
-            throw new Error(`کارگر گرادیو خطا داد: ${responseJson.error}`);
+        // حالت 2: پاسخ JSON (خطا)
+        if (contentType && contentType.includes('application/json')) {
+            const errorBody = await hfResponse.json();
+            const errorMsg = errorBody.error || errorBody.detail || 'خطای ناشناخته از کارگر';
+            throw new Error(errorMsg);
         }
         
-        // استخراج تصویر از پاسخ (ساختار خروجی Gallery)
-        let resultImageDataURI = null;
-        
-        // حالت 1: ساختار پیش‌فرض گرادیو
-        if (responseJson.data && responseJson.data[0] && Array.isArray(responseJson.data[0])) {
-            for (const item of responseJson.data[0]) {
-                if (Array.isArray(item) && item.length > 0 && typeof item[0] === 'string' && item[0].startsWith('data:image')) {
-                    resultImageDataURI = item[0];
-                    break;
-                }
-            }
-        }
-        // حالت 2: ساختار FastAPI
-        else if (responseJson.data && responseJson.data[0] && typeof responseJson.data[0] === 'string' && responseJson.data[0].startsWith('data:image')) {
-            resultImageDataURI = responseJson.data[0];
-        }
-        
-        if (!resultImageDataURI) {
-            // تلاش برای استخراج پیام خطا
-            const errorText = responseJson.data && responseJson.data[1] 
-                ? responseJson.data[1] 
-                : "کارگر تصویری تولید نکرد. لطفاً دستور را بررسی کنید.";
-            throw new Error(errorText);
-        }
-
-        // تبدیل Data URI به بافر باینری
-        const base64Data = resultImageDataURI.split(';base64,').pop();
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-
-        // ارسال تصویر به عنوان پاسخ
-        res.setHeader('Content-Type', 'image/png');
-        res.send(imageBuffer);
+        // حالت 3: سایر انواع پاسخ
+        const textResponse = await hfResponse.text();
+        throw new Error(textResponse || 'خطای ناشناخته از کارگر');
 
     } catch (error) {
         console.error('[Proxy Error]', error.message);
